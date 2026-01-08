@@ -6,9 +6,12 @@
 import requests
 import time
 from datetime import datetime
+import sys
+
+
 
 API_KEY = "9a71ddfbf6256a950c4562fa12af7f3fc1bdb4c60eaa0c0d0f8274688f8f2947"
-URL_TO_SCAN = "https://boards.ie"
+URL_TO_SCAN = sys.argv[1]
 
 HEADERS = {
     "x-apikey": API_KEY
