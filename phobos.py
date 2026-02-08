@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 
-# API Key: 9a71ddfbf6256a950c4562fa12af7f3fc1bdb4c60eaa0c0d0f8274688f8f2947
 
 
 import requests
