@@ -5,12 +5,18 @@
 
 import requests
 import time
-from datetime import datetime
+import datetime 
 import sys
+from dotenv import main
+import os
+
+main.load_dotenv('config.env')
+
+API_KEY = os.getenv('VT_API_KEY')
+print(API_KEY)
 
 
 
-API_KEY = "9a71ddfbf6256a950c4562fa12af7f3fc1bdb4c60eaa0c0d0f8274688f8f2947"
 URL_TO_SCAN = sys.argv[1]
 
 HEADERS = {
@@ -39,6 +45,11 @@ def get_url_details(url_id):
     response.raise_for_status()
     return response.json()
 
+def convert_from_epoch(epoch):
+    value = datetime.datetime.fromtimestamp(epoch.pop())
+    return value.strftime('%Y-%m-%d %H:%M:%S')
+
+
 # 1. Submit URL
 analysis_id = submit_url(URL_TO_SCAN)
 print(f"[+] URL submitted")
@@ -59,12 +70,27 @@ results = analysis_data["data"]["attributes"]["results"]
 details_data = get_url_details(url_id)
 attributes = details_data["data"]["attributes"]
 
-# 5. Print Summary
+# 5. Assemble Summary Values
+
+URL = {attributes.get('url', 0)}
+URL = str(URL)
+reputation =  {attributes.get('reputation', 0)}
+
+first_seen_epoch = {attributes.get('first_submission_date', 0)}
+last_checked_epoch = {attributes.get('last_analysis_date', 0)}
+
+first_seen = convert_from_epoch(first_seen_epoch)
+last_checked = convert_from_epoch(last_checked_epoch)
+
+# 6 Print Summary Values       
 print("\n=== URL INFORMATION ===")
-print(f"URL:             {attributes.get('url')}")
-print(f"Reputation:      {attributes.get('reputation')}")
-print(f"First Seen:      {datetime.utcfromtimestamp(attributes.get('first_submission_date', 0))}")
-print(f"Last Analysis:   {datetime.utcfromtimestamp(attributes.get('last_analysis_date', 0))}")
+print(f"URL: { URL }")
+print(f"Reputation: {reputation}")      
+print(f"First Seen: {first_seen}")
+print(f"Last Analysis: {last_checked}")
+
+
+
 
 print("\n=== CATEGORY ===")
 for source, category in attributes.get("categories", {}).items():
