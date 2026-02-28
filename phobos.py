@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 
-
+#
+# Importing additional libraries
+#
 
 import requests
 import time
@@ -21,8 +23,10 @@ print(API_KEY)
 
 
 
-URL_TO_SCAN = sys.argv[1]
+if len(sys.argv) < 2:
+    exit("Phobos.py requires a URL as an argument to run.\nUsage: phobos.py url")
 
+URL_TO_SCAN = sys.argv[1]   # 
 HEADERS = {
     "x-apikey": API_KEY
 }
