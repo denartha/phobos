@@ -12,19 +12,136 @@ import os
 import re
 import matplotlib.pyplot as plt
 import numpy as np
+
 from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.units import mm
+from reportlab.platypus import Paragraph
+from reportlab.lib.styles import getSampleStyleSheet
+from reportlab.platypus import SimpleDocTemplate
 from reportlab.lib import colors
+from reportlab.platypus import Frame
+from reportlab.platypus import KeepInFrame
+from reportlab.platypus import Spacer
+from reportlab.lib.styles import ParagraphStyle
+from reportlab.platypus import SimpleDocTemplate, Paragraph
+from reportlab.platypus import FrameBreak
+from reportlab.platypus import PageBreak
+from reportlab.platypus import BaseDocTemplate
+from reportlab.platypus import Frame
+from reportlab.platypus import PageTemplate
+from openai import OpenAI
+from dotenv import load_dotenv
 
-from dotenv import main
 
 
-
-main.load_dotenv('config.env')
+load_dotenv('config.env')
 
 API_KEY = os.getenv('VT_API_KEY')
-print(API_KEY)
+
+def get_chatgpt_summary(URL, reputation, harmless_score, malicious_score):
+    client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+
+    prompt = f"""
+    You are a cybersecurity analyst.
+
+    Summarise the following threat intelligence findings into a clear,
+    professional executive summary suitable for inclusion in a PDF report.
+
+    URL: {URL}
+    Reputation Score: {reputation}
+    Harmless Score: {harmless_score}
+    Malicious Score: {malicious_score}
+
+    Provide:
+    - A short executive summary
+    - A clear risk assessment
+    - Recommended action for users
+    """
+
+    response = client.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=[
+            {"role": "system", "content": "You are a professional cybersecurity threat analyst."},
+            {"role": "user", "content": prompt}
+        ],
+        temperature=0.3,
+    )
+
+    return response.choices[0].message.content.strip()
+
+
+def wrap_text(text, canvas_obj, max_width):
+    """Helper function to wrap text within PDF margins"""
+    lines = []
+    words = text.split()
+    line = ""
+
+    for word in words:
+        test_line = f"{line} {word}".strip()
+        if canvas_obj.stringWidth(test_line, "Helvetica", 12) <= max_width:
+            line = test_line
+        else:
+            lines.append(line)
+            line = word
+
+    if line:
+        lines.append(line)
+
+    return lines
+
+
+def create_threat_report_pdf(URL, reputation, harmless_score, malicious_score,
+                             image_path="reputation.png",
+                             path="Threat_report.pdf"):
+
+    # 🔹 Step 1: Get AI Summary
+    ai_summary = get_chatgpt_summary(URL, reputation, harmless_score, malicious_score)
+
+    c = canvas.Canvas(path, pagesize=A4)
+    width, height = A4
+    c.setFont("Helvetica", 12)
+
+    text1 = f"This is the threat report for {URL}"
+    text2 = f"According to our analysis, {URL} has the following scores:"
+    text3 = f"Reputation: {reputation}"
+    text4 = f"Harmless rating: {harmless_score}"
+    text5 = f"Malicious Score: {malicious_score}"
+
+    text = c.beginText(20 * mm, height - 20 * mm)
+
+    text.textLine(text1)
+    text.textLine(text2)
+    text.textLine("")
+    text.textLine(text3)
+    text.textLine(text4)
+    text.textLine(text5)
+    text.textLine("")
+    text.textLine("Executive AI Summary:")
+    text.textLine("")
+
+    # 🔹 Step 2: Wrap and Insert AI Summary
+    max_width = width - 40 * mm
+    wrapped_summary = wrap_text(ai_summary, c, max_width)
+
+    for line in wrapped_summary:
+        text.textLine(line)
+
+    c.drawText(text)
+
+    # 🔹 Step 3: Insert Image Below Text
+    text_height = text.getY()
+    image_x = 20 * mm
+    image_y = text_height - 270
+    image_height = 250
+
+    c.drawImage(image_path, image_x, image_y, width=233, height=image_height)
+
+    c.save()
+
+
+
+
 
 
 
@@ -88,7 +205,7 @@ def calculate_score(URL, reputation,harmless_score,malicious_score):        # Ca
         harm_score = 'Threatening'
         print(f"The site is potentially malicious with a Malicious Score of: {malicious_score}")
 
-
+"""
 def create_threat_report_pdf(URL, reputation, harmless_score, malicious_score, image_path="reputation.png", path="Threat_report.pdf"):
     c = canvas.Canvas(path, pagesize=A4)
     width, height = A4  # points
@@ -155,19 +272,10 @@ def create_threat_report_pdf(URL, reputation, harmless_score, malicious_score, i
     text.textLine(text12)
     text.textLine(text14)
     c.drawText(text)
-
-
-
-
-
-
-
-
-
     c.showPage()
     c.save()
 
-
+"""
 
 
 
